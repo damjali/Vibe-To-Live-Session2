@@ -23,7 +23,7 @@ class ConnectionManager:
     async def broadcast(self, message: dict):
         # We need to collect disconnected players to remove them later
         disconnected_players = []
-        for player_id, connection in self.active_connections.items():
+        for player_id, connection in list(self.active_connections.items()):
             try:
                 await connection.send_json(message)
             except Exception as e:

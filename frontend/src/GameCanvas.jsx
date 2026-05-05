@@ -14,14 +14,14 @@ const GameCanvas = ({ ws, playerId, serverStateRef }) => {
     
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
-      if (['w', 'a', 's', 'd'].includes(key)) {
+      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
         keysRef.current[key] = true;
       }
     };
 
     const handleKeyUp = (e) => {
       const key = e.key.toLowerCase();
-      if (['w', 'a', 's', 'd'].includes(key)) {
+      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
         keysRef.current[key] = false;
       }
     };
@@ -85,17 +85,17 @@ const GameCanvas = ({ ws, playerId, serverStateRef }) => {
       } else {
         // Free-roam spectating
         if (!hasInitializedSpectatorRef.current) {
-          // Start at center or where we died
-          spectatorPosRef.current = { x: myPlayer ? myPlayer.x : 0, y: myPlayer ? myPlayer.y : 0 };
+          // Start at center of the arena so they can easily find the remaining players
+          spectatorPosRef.current = { x: 0, y: 0 };
           hasInitializedSpectatorRef.current = true;
         }
 
-        // Move spectator camera with WASD
+        // Move spectator camera with WASD or Arrow Keys
         const specSpeed = 15;
-        if (keysRef.current.w) spectatorPosRef.current.y -= specSpeed;
-        if (keysRef.current.s) spectatorPosRef.current.y += specSpeed;
-        if (keysRef.current.a) spectatorPosRef.current.x -= specSpeed;
-        if (keysRef.current.d) spectatorPosRef.current.x += specSpeed;
+        if (keysRef.current.w || keysRef.current.arrowup) spectatorPosRef.current.y -= specSpeed;
+        if (keysRef.current.s || keysRef.current.arrowdown) spectatorPosRef.current.y += specSpeed;
+        if (keysRef.current.a || keysRef.current.arrowleft) spectatorPosRef.current.x -= specSpeed;
+        if (keysRef.current.d || keysRef.current.arrowright) spectatorPosRef.current.x += specSpeed;
 
         camX = spectatorPosRef.current.x;
         camY = spectatorPosRef.current.y;

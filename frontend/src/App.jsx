@@ -120,23 +120,82 @@ function App() {
       )}
       
       {appState === 'connected' && serverStatus === 'lobby' && (
-        <div className="overlay">
-          <h1>Lobby</h1>
-          <p style={{fontSize: '12px', color: '#888'}}>My ID: {playerId} | Admin: {adminId}</p>
-          <div className="player-list">
-            {playersList.map(p => (
-              <div key={p.id} className="player-item" style={{color: p.color}}>
-                {p.name} {p.id === adminId && "(Admin)"} {p.id === playerId && "(You)"}
+        <div className="overlay lobby-layout">
+          <div className="lobby-content">
+            <div className="lobby-header">
+              <h1>Sumo Circles</h1>
+              <p style={{fontSize: '12px', color: '#888'}}>My ID: {playerId} | Admin: {adminId}</p>
+            </div>
+            
+            <div className="lobby-main">
+              {/* Left Rules */}
+              <div className="side-section left-rules">
+                <h2>The Basics</h2>
+                <div className="rules-container">
+                  <div className="rule-item rule-anim-1">
+                    <span className="rule-icon">🕹️</span>
+                    <div>
+                      <strong>Move</strong>
+                      <p>Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or arrows to navigate.</p>
+                    </div>
+                  </div>
+                  <div className="rule-item rule-anim-2">
+                    <span className="rule-icon">⚪</span>
+                    <div>
+                      <strong>Grow</strong>
+                      <p>Collect white pellets to increase your mass.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
+
+              {/* Center Players */}
+              <div className="center-section">
+                <h2>Players Ready ({playersList.length})</h2>
+                <div className="player-grid">
+                  {playersList.map(p => (
+                    <div key={p.id} className="player-item" style={{color: p.color, borderColor: p.color}}>
+                      <span className="player-dot" style={{backgroundColor: p.color}}></span>
+                      <span className="player-name">{p.name}</span>
+                      {p.id === adminId && <span className="badge admin-badge">Admin</span>} 
+                      {p.id === playerId && <span className="badge you-badge">You</span>}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="lobby-actions">
+                  {adminId === playerId ? (
+                    <button className="btn start-btn pulse-anim" onClick={() => ws.send(JSON.stringify({type: 'start_game'}))}>
+                      Start Game
+                    </button>
+                  ) : (
+                    <p className="waiting-text waiting-anim">Waiting for admin to start<span>.</span><span>.</span><span>.</span></p>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Rules */}
+              <div className="side-section right-rules">
+                <h2>Combat</h2>
+                <div className="rules-container">
+                  <div className="rule-item rule-anim-3">
+                    <span className="rule-icon">💥</span>
+                    <div>
+                      <strong>Push</strong>
+                      <p>Ram into others. Larger mass pushes harder!</p>
+                    </div>
+                  </div>
+                  <div className="rule-item rule-anim-4">
+                    <span className="rule-icon">🔥</span>
+                    <div>
+                      <strong>Survive</strong>
+                      <p>Stay inside the shrinking Ring of Fire.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          {adminId === playerId ? (
-            <button className="btn" onClick={() => ws.send(JSON.stringify({type: 'start_game'}))}>
-              Start Game
-            </button>
-          ) : (
-            <p>Waiting for admin to start the game...</p>
-          )}
         </div>
       )}
       

@@ -55,6 +55,7 @@ http://localhost:8000/
 Now we make your game **public and multiplayer**.
 
 ---
+
 ## Step 1: Open Google Cloud Shell
 
 Go to **Google Cloud Console → Cloud Shell**
@@ -70,41 +71,70 @@ cd Vibe-To-Live-Session2
 
 ---
 
-## Step 3: Build Docker Image
+## ⚠️ Step 3: Set Project Info & Permissions (IMPORTANT)
+
+Before building, you must configure your **Project ID, Project Number, and permissions**.
+
+### 1. Get Project ID & Number
+
+```bash
+export PROJECT_ID=$(gcloud config get-value project)
+export PROJECT_NUM=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+```
+
+---
+
+### 2. Grant Required Permissions
+
+```bash
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUM}-compute@developer.gserviceaccount.com" \
+  --role="roles/run.builder"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUM}-compute@developer.gserviceaccount.com" \
+  --role="roles/editor"
+```
+
+✅ This allows Cloud Run to:
+
+* Build your container
+* Deploy and manage services
+
+---
+
+## Step 4: Build Docker Image
 
 Run this command:
 
 ```bash
 gcloud builds submit \
---tag asia-southeast1-docker.pkg.dev/YOUR_PROJECT_ID/vibe-to-live/sumo-wars:latest .
+--tag asia-southeast1-docker.pkg.dev/$PROJECT_ID/vibe-to-live/sumo-wars:latest .
 ```
-
-⚠️ Replace:
-
-```
-YOUR_PROJECT_ID
-```
-
-with your **own Google Cloud project ID**
 
 ---
 
-## Step 4: Deploy to Cloud Run
+## Step 5: Deploy to Cloud Run
 
 1. Go to **Cloud Run**
+
 2. Click **"Services"**
+
 3. Click **"Deploy Container"**
+
 4. Under **Container Image URL**, select the image you just built
+
 5. Configure:
 
    * **Port:** `8000`
    * **Region:** `asia-southeast1 (Singapore)`
    * ✅ Allow **public access**
+
 6. Click **Create**
 
 ---
 
-## Step 5: Play Multiplayer 🎮
+## Step 6: Play Multiplayer 🎮
 
 After deployment:
 
@@ -114,6 +144,7 @@ After deployment:
 
 🔥 Now multiple players can join your game at the same time!
 
+---
 
 # 🎉 Congrats!
 
@@ -122,3 +153,5 @@ You’ve successfully:
 * Run a backend server locally
 * Built a Docker image
 * Deployed a serverless multiplayer game
+
+Now go share your game and play together 🚀

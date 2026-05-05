@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 
 const GameCanvas = ({ ws, playerId, serverStateRef }) => {
   const canvasRef = useRef(null);
+  const spectatorPosRef = useRef({ x: 0, y: 0 });
+  const hasInitializedSpectatorRef = useRef(false);
   
   // Track WASD keys
   const keysRef = useRef({ w: false, a: false, s: false, d: false });
@@ -44,35 +46,59 @@ const GameCanvas = ({ ws, playerId, serverStateRef }) => {
       
       // Find my player
       const myPlayer = state.players.find(p => p.id === playerId);
+      const alivePlayers = state.players.filter(p => p.is_alive);
       
-      // Calculate camera center. If my player exists, center on them, otherwise center on 0,0
-      const camX = myPlayer ? myPlayer.x : 0;
-      const camY = myPlayer ? myPlayer.y : 0;
-      
-      // Send input based on WASD keys
-      if (ws && ws.readyState === WebSocket.OPEN && myPlayer) {
-        let dx = 0;
-        let dy = 0;
-        if (keysRef.current.w) dy -= 1;
-        if (keysRef.current.s) dy += 1;
-        if (keysRef.current.a) dx -= 1;
-        if (keysRef.current.d) dx += 1;
+      // Calculate camera center
+      let camX = 0;
+      let camY = 0;
+
+      if (myPlayer && myPlayer.is_alive) {
+        camX = myPlayer.x;
+        camY = myPlayer.y;
+        hasInitializedSpectatorRef.current = false;
         
-        let targetWorldX = myPlayer.x;
-        let targetWorldY = myPlayer.y;
-        
-        if (dx !== 0 || dy !== 0) {
-          const length = Math.sqrt(dx*dx + dy*dy);
-          dx /= length;
-          dy /= length;
-          targetWorldX += dx * 100;
-          targetWorldY += dy * 100;
+        // Send input based on WASD keys ONLY IF ALIVE
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          let dx = 0;
+          let dy = 0;
+          if (keysRef.current.w) dy -= 1;
+          if (keysRef.current.s) dy += 1;
+          if (keysRef.current.a) dx -= 1;
+          if (keysRef.current.d) dx += 1;
+          
+          let targetWorldX = myPlayer.x;
+          let targetWorldY = myPlayer.y;
+          
+          if (dx !== 0 || dy !== 0) {
+            const length = Math.sqrt(dx*dx + dy*dy);
+            dx /= length;
+            dy /= length;
+            targetWorldX += dx * 100;
+            targetWorldY += dy * 100;
+          }
+          
+          ws.send(JSON.stringify({
+            type: 'input',
+            data: { x: targetWorldX, y: targetWorldY }
+          }));
         }
-        
-        ws.send(JSON.stringify({
-          type: 'input',
-          data: { x: targetWorldX, y: targetWorldY }
-        }));
+      } else {
+        // Free-roam spectating
+        if (!hasInitializedSpectatorRef.current) {
+          // Start at center or where we died
+          spectatorPosRef.current = { x: myPlayer ? myPlayer.x : 0, y: myPlayer ? myPlayer.y : 0 };
+          hasInitializedSpectatorRef.current = true;
+        }
+
+        // Move spectator camera with WASD
+        const specSpeed = 15;
+        if (keysRef.current.w) spectatorPosRef.current.y -= specSpeed;
+        if (keysRef.current.s) spectatorPosRef.current.y += specSpeed;
+        if (keysRef.current.a) spectatorPosRef.current.x -= specSpeed;
+        if (keysRef.current.d) spectatorPosRef.current.x += specSpeed;
+
+        camX = spectatorPosRef.current.x;
+        camY = spectatorPosRef.current.y;
       }
 
       // Clear canvas
@@ -129,9 +155,7 @@ const GameCanvas = ({ ws, playerId, serverStateRef }) => {
         ctx.shadowBlur = 0;
       }
 
-      // Draw Players
-      // Draw other players first, then my player on top
-      const others = state.players.filter(p => p.id !== playerId);
+      // Draw ONLY ALIVE Players
       const renderPlayer = (player) => {
         ctx.beginPath();
         ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
@@ -209,9 +233,25 @@ const GameCanvas = ({ ws, playerId, serverStateRef }) => {
         ctx.shadowBlur = 0; // reset
       };
 
-      others.forEach(renderPlayer);
-      if (myPlayer) renderPlayer(myPlayer);
+      state.players.filter(p => p.is_alive).forEach(renderPlayer);
 
+      ctx.restore();
+
+      // Draw UI Info
+      ctx.save();
+      ctx.resetTransform();
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'left';
+      if (myPlayer && !myPlayer.is_alive) {
+        ctx.fillText(`FREE SPECTATING: USE WASD TO MOVE`, 20, 40);
+      }
+      if (state.status === 'gameover') {
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 40px Arial';
+        const winner = state.players.find(p => p.id === state.winner_id);
+        ctx.fillText(winner ? `WINNER: ${winner.name}!` : "DRAW!", width / 2, height / 2 - 50);
+      }
       ctx.restore();
       
       animationFrameId = requestAnimationFrame(render);

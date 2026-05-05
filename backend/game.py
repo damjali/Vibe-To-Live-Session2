@@ -44,6 +44,7 @@ class GameState:
         self.max_pellets = 100
         self.status = 'lobby'
         self.admin_id = None
+        self.winner_id = None
         
         for _ in range(self.max_pellets):
             self.pellets.append(Pellet())
@@ -75,6 +76,7 @@ class GameState:
     def reset_game(self):
         self.status = 'lobby'
         self.arenaRadius = 1000.0
+        self.winner_id = None
         self.pellets.clear()
         for _ in range(self.max_pellets):
             self.pellets.append(Pellet())
@@ -102,6 +104,7 @@ class GameState:
         return {
             "status": self.status,
             "admin_id": self.admin_id,
+            "winner_id": self.winner_id,
             "arenaRadius": self.arenaRadius,
             "players": [
                 {
@@ -295,8 +298,15 @@ class GameState:
                 p.radius = 20.0 + math.pow(p.mass - 10.0, 0.7) * 2.0
                 
         # Check game over condition
-        alive_count = sum(1 for p in self.players.values() if p.is_alive)
-        if alive_count == 0 or (len(self.players) > 1 and alive_count <= 1):
-            self.status = 'gameover'
+        alive_players = [p for p in self.players.values() if p.is_alive]
+        alive_count = len(alive_players)
+        
+        if self.status == 'playing':
+            if alive_count == 1 and len(self.players) > 1:
+                self.status = 'gameover'
+                self.winner_id = alive_players[0].id
+            elif alive_count == 0:
+                self.status = 'gameover'
+                self.winner_id = None
                 
         return out_of_bounds_players

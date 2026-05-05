@@ -27,9 +27,13 @@ function App() {
     
     setAppState('connecting')
     setSpectatorMsg('')
-    const socket = new WebSocket('ws://localhost:8000/ws?name=' + encodeURIComponent(name))
-    
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const socket = new WebSocket(`${protocol}//${host}/ws?name=` + encodeURIComponent(name))
+
     socket.onopen = () => {
+
       setWs(socket)
       setAppState('connected')
     }

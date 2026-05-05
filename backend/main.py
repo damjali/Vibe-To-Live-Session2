@@ -95,12 +95,12 @@ async def startup_event():
 
 # Serve static files from the "static" directory
 # Change "static" to "frontend/dist" for local development
-# Define possible locations for the frontend build
+# Define possible locations for the frontend build using absolute paths
 base_dir = os.path.dirname(os.path.abspath(__file__))
 static_options = [
-    "static",                          # Docker location
-    "frontend/dist",                   # Local development location
-    os.path.join(base_dir, "static"),  # Absolute path fallback
+    os.path.join(base_dir, "static"),          # Docker location (backend/static)
+    os.path.join(base_dir, "..", "frontend", "dist"), # Local development (parent/frontend/dist)
+    os.path.join(base_dir, "frontend", "dist"), # Another common local layout
 ]
 
 static_dir = None
@@ -111,20 +111,24 @@ for option in static_options:
 
 if static_dir:
     print(f"Serving static files from: {static_dir}")
-    app.mount("/assets", StaticFiles(directory=f"{static_dir}/assets"), name="assets")
+    # Mount assets directory for efficient serving of JS/CSS/Images
+    assets_path = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
     @app.get("/")
     async def read_index():
-        return FileResponse(f"{static_dir}/index.html")
+        return FileResponse(os.path.join(static_dir, "index.html"))
 
+    # Catch-all route to serve the SPA index.html for any unknown paths (for client-side routing)
     @app.get("/{full_path:path}")
     async def serve_static(full_path: str):
         file_path = os.path.join(static_dir, full_path)
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(f"{static_dir}/index.html")
+        return FileResponse(os.path.join(static_dir, "index.html"))
 else:
-    print("CRITICAL: No static files directory found! Frontend will not be served.")
+    print(f"CRITICAL: No static files directory found! Searched in: {static_options}")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

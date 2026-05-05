@@ -175,15 +175,27 @@ class GameState:
             p.x += p.vx * dt
             p.y += p.vy * dt
             
-            # Friction for knockback velocity
-            friction = 5.0 * dt
+            # Friction for knockback velocity - INCREASED to stop drifting
+            friction = 8.0 * dt 
             speed_v = math.sqrt(p.vx**2 + p.vy**2)
             if speed_v > 0:
                 drop = speed_v * friction
                 new_speed = max(0, speed_v - drop)
-                p.vx *= new_speed / speed_v
-                p.vy *= new_speed / speed_v
+                # If speed is very low, just stop it to prevent micro-drifting
+                if new_speed < 5.0:
+                    p.vx = 0
+                    p.vy = 0
+                else:
+                    p.vx *= new_speed / speed_v
+                    p.vy *= new_speed / speed_v
                 
+            # Limit maximum knockback velocity
+            max_v = 1200.0 # Lowered cap for more control
+            curr_v = math.sqrt(p.vx**2 + p.vy**2)
+            if curr_v > max_v:
+                p.vx = (p.vx / curr_v) * max_v
+                p.vy = (p.vy / curr_v) * max_v
+
             # Check arena bounds
             dist_from_center = math.sqrt(p.x**2 + p.y**2)
             if dist_from_center > self.arenaRadius:
@@ -206,37 +218,59 @@ class GameState:
                     # They are colliding
                     overlap = min_dist - dist
                     
-                    # Separate them
+                    # Normal vector
                     nx = dx / dist
                     ny = dy / dist
                     
-                    # Pushing them apart proportional to inverse mass
                     total_mass = p1.mass + p2.mass
-                    p1_ratio = p2.mass / total_mass
-                    p2_ratio = p1.mass / total_mass
                     
-                    p1.x -= nx * overlap * p1_ratio
-                    p1.y -= ny * overlap * p1_ratio
-                    p2.x += nx * overlap * p2_ratio
-                    p2.y += ny * overlap * p2_ratio
+                    # 1. Bouncy Impulse (Elastic collision)
+                    # Lowered strength to prevent excessive popping
+                    spring_strength = 15.0 
+                    separation_impulse = overlap * spring_strength
                     
-                    # Apply knockback velocity
-                    # We want bigger players to bounce smaller ones away
-                    base_knockback = 800.0
+                    p1.vx -= nx * separation_impulse * (p2.mass / total_mass)
+                    p1.vy -= ny * separation_impulse * (p2.mass / total_mass)
+                    p2.vx += nx * separation_impulse * (p1.mass / total_mass)
+                    p2.vy += ny * separation_impulse * (p1.mass / total_mass)
                     
-                    if p1.mass > p2.mass:
-                        force = base_knockback * (p1.mass / p2.mass)
-                        p2.vx += nx * force
-                        p2.vy += ny * force
-                    elif p2.mass > p1.mass:
-                        force = base_knockback * (p2.mass / p1.mass)
-                        p1.vx -= nx * force
-                        p1.vy -= ny * force
-                    else:
-                        p1.vx -= nx * base_knockback * 0.5
-                        p1.vy -= ny * base_knockback * 0.5
-                        p2.vx += nx * base_knockback * 0.5
-                        p2.vy += ny * base_knockback * 0.5
+                    # 2. Sustained Push Force
+                    # Lowered significantly to prevent "over-pushing"
+                    push_power = 300.0 
+                    
+                    # Force from P1 to P2
+                    p1_to_p2_dot = (p1.target_x - p1.x) * nx + (p1.target_y - p1.y) * ny
+                    if p1_to_p2_dot > 0: # P1 is moving towards P2
+                        force = push_power * (p1.mass / p2.mass)
+                        p2.vx += nx * force * dt * 60.0 # Scale by framerate
+                        
+                    # Force from P2 to P1
+                    p2_to_p1_dot = (p2.target_x - p2.x) * (-nx) + (p2.target_y - p2.y) * (-ny)
+                    if p2_to_p1_dot > 0: # P2 is moving towards P1
+                        force = push_power * (p2.mass / p1.mass)
+                        p1.vx -= nx * force * dt * 60.0
+                    
+                    # 3. Static Separation
+                    separation_factor = 0.3 # Lowered to keep it smooth
+                    p1.x -= nx * overlap * (p2.mass / total_mass) * separation_factor
+                    p1.y -= ny * overlap * (p2.mass / total_mass) * separation_factor
+                    p2.x += nx * overlap * (p1.mass / total_mass) * separation_factor
+                    p2.y += ny * overlap * (p1.mass / total_mass) * separation_factor
+                    
+                    # 4. Impact Bounce (Initial Hit)
+                    rvx = p2.vx - p1.vx
+                    rvy = p2.vy - p1.vy
+                    vel_along_normal = rvx * nx + rvy * ny
+                    
+                    if vel_along_normal < 0:
+                        restitution = 0.4 # Lowered bounciness for more stability
+                        impulse = -(1 + restitution) * vel_along_normal
+                        impulse /= (1 / p1.mass + 1 / p2.mass)
+                        
+                        p1.vx -= (impulse / p1.mass) * nx
+                        p1.vy -= (impulse / p1.mass) * ny
+                        p2.vx += (impulse / p2.mass) * nx
+                        p2.vy += (impulse / p2.mass) * ny
                         
         # Check pellet consumption
         for p in self.players.values():
@@ -256,8 +290,9 @@ class GameState:
                 if pellet in self.pellets:
                     self.pellets.remove(pellet)
                 # Increase mass and radius
-                p.mass += 1.0
-                p.radius = 20.0 + math.sqrt(p.mass - 10.0) * 3.0
+                p.mass += 0.5
+                # Logarithmic-like growth to prevent becoming infinitely large too fast
+                p.radius = 20.0 + math.pow(p.mass - 10.0, 0.7) * 2.0
                 
         # Check game over condition
         alive_count = sum(1 for p in self.players.values() if p.is_alive)

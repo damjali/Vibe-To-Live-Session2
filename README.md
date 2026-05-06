@@ -7,84 +7,88 @@ By the end of this guide, your game will be **live on the internet** and playabl
 
 ---
 
-# 🚀 Section 1: Run the Game Locally (Single Player)
+## 🚀 Section 1: Run the Game Locally (Single Player)
 
-First, we run the game on your own computer.
+First, let's run the game on your own computer to see how it works locally.
 
-### 1. Activate Virtual Environment
+### 1. Create and Activate a Virtual Environment
 
-Navigate to your project folder and activate the virtual environment:
+Navigate to the `backend` folder and set up a Python virtual environment:
 
-```bash
-cd backend\venv\Scripts
-activate
+**Windows:**
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Or from root:
-
+**macOS / Linux:**
 ```bash
-.\backend\venv\Scripts\activate
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
-
----
 
 ### 2. Start the Backend Server
 
+Once dependencies are installed, start the FastAPI server:
+
 ```bash
-cd backend
 uvicorn main:app --reload
 ```
 
----
-
 ### 3. Open in Browser
 
-Go to:
+Go to the following URL in your web browser:
+👉 `http://localhost:8000/`
 
-```
-http://localhost:8000/
-```
-
-✅ At this point, your game is running locally
+✅ At this point, your game is running locally!
 ❌ But… you're playing alone 😢
 
 ---
 
-# 🌐 Section 2: Deploy Online (Multiplayer with Cloud Run)
+## 🌐 Section 2: Deploy Online (Multiplayer with Cloud Run)
 
-Now we make your game **public and multiplayer**.
+Now let's make your game **public and multiplayer** so others can join!
 
----
+### Step 1: Claim GCP Credits and Enable Services
 
-## Step 1: Open Google Cloud Shell
+1. Claim your free $5 GCP credit (if applicable).
+2. Open the **Google Cloud Console**.
+3. Go to the **Billing** section and open **Linked Accounts**.
+4. Set the billing account for your current project to the **Google Cloud Platform Trial Billing Account**.
 
-Go to **Google Cloud Console → Cloud Shell**
+Open **Google Cloud Shell** from the console, and enable the required services:
 
----
+```bash
+gcloud services enable compute.googleapis.com run.googleapis.com cloudbuild.googleapis.com
+```
 
-## Step 2: Clone the Project
+### Step 2: Clone the Project in Cloud Shell
+
+In your Cloud Shell, run the following commands to get the project files:
 
 ```bash
 git clone https://github.com/damjali/Vibe-To-Live-Session2.git
 cd Vibe-To-Live-Session2
 ```
 
----
-
-## ⚠️ Step 3: Set Project Info & Permissions (IMPORTANT)
+### ⚠️ Step 3: Set Project Info & Permissions (IMPORTANT)
 
 Before building, you must configure your **Project ID, Project Number, and permissions**.
 
-### 1. Get Project ID & Number
+#### 1. Get Project ID & Number
 
 ```bash
 export PROJECT_ID=$(gcloud config get-value project)
 export PROJECT_NUM=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 ```
 
----
+#### 2. Grant Required Permissions
 
-### 2. Grant Required Permissions
+Grant the default compute service account the necessary permissions to build and deploy to Cloud Run:
 
 ```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -97,61 +101,60 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ```
 
 ✅ This allows Cloud Run to:
-
 * Build your container
 * Deploy and manage services
 
----
+### Step 4: Create Artifact Registry & Build Docker Image
 
-## Step 4: Build Docker Image
+First, create a repository inside Artifact Registry for the project:
 
-Run this command:
+```bash
+gcloud artifacts repositories create vibe-to-live \
+    --repository-format=docker \
+    --location=asia-southeast1 \
+    --description="Docker repository for Vibe-To-Live project"
+```
+
+Then, submit the build using Google Cloud Build:
 
 ```bash
 gcloud builds submit \
---tag asia-southeast1-docker.pkg.dev/$PROJECT_ID/vibe-to-live/sumo-wars:latest .
+    --tag asia-southeast1-docker.pkg.dev/$PROJECT_ID/vibe-to-live/sumo-wars:latest .
 ```
 
----
+### Step 5: Deploy to Cloud Run
 
-## Step 5: Deploy to Cloud Run
+Once the image is built, deploy it via the Google Cloud Console:
 
-1. Go to **Cloud Run**
+1. Go to **Cloud Run** in the Google Cloud Console.
+2. Click on **Services** and then **Deploy Container**.
+3. Under **Container Image URL**, select the `sumo-wars` image you just built.
+4. Configure the following settings:
+   - **Container Port:** `8000`
+   - **Region:** `asia-southeast1 (Singapore)`
+   - **Minimum Instances:** `0`
+   - **Maximum Instances:** `1` *(Optional: Keeps everyone in the same server instance)*
+   - **Authentication:** ✅ Allow **unauthenticated invocations** (Public access)
+5. Click **Create**.
 
-2. Click **"Services"**
+### Step 6: Play Multiplayer 🎮
 
-3. Click **"Deploy Container"**
+After deployment is complete:
 
-4. Under **Container Image URL**, select the image you just built
-
-5. Configure:
-
-   * **Port:** `8000`
-   * **Region:** `asia-southeast1 (Singapore)`
-   * ✅ Allow **public access**
-
-6. Click **Create**
-
----
-
-## Step 6: Play Multiplayer 🎮
-
-After deployment:
-
-* You’ll get a **public URL**
-* Open it in your browser
-* Send it to your friends
+* You’ll get a **public URL** for your Cloud Run service.
+* Open it in your browser.
+* Share the link with your friends!
 
 🔥 Now multiple players can join your game at the same time!
 
 ---
 
-# 🎉 Congrats!
+## 🎉 Congratulations!
 
 You’ve successfully:
+✔️ Run a backend server locally.
+✔️ Set up Google Cloud Platform with necessary permissions.
+✔️ Built a Docker image and stored it in Artifact Registry.
+✔️ Deployed a serverless multiplayer game using Cloud Run.
 
-* Run a backend server locally
-* Built a Docker image
-* Deployed a serverless multiplayer game
-
-Now go share your game and play together 🚀
+Now go share your game and play together! 🚀

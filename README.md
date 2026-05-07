@@ -13,30 +13,29 @@ Before starting the workshop, make sure you have the following installed on your
 
 ## ✅ Required Software
 
-### 1. Install Python
+---
+
+## 1. Install Python
+
 Download and install Python (version 3.10 or newer recommended):
 
 - Windows/macOS/Linux:
   - https://www.python.org/downloads/
 
 ⚠️ During installation on Windows, make sure to check:
+
 - ✅ “Add Python to PATH”
 
 ---
 
-### 2. Install Node.js & npm
+## 2. Check if Python is Added to PATH
 
-Download Node.js (LTS version recommended):
+After installation, open:
 
-- https://nodejs.org/
+- Windows → Command Prompt / PowerShell
+- macOS/Linux → Terminal
 
-Installing Node.js will also install `npm`.
-
----
-
-### 3. Verify Installation
-
-Open your terminal / PowerShell / Command Prompt and run:
+Run:
 
 ```bash
 python --version
@@ -48,7 +47,43 @@ Expected output example:
 Python 3.11.0
 ```
 
-Then verify npm:
+If you see:
+
+```bash
+python is not recognized
+```
+
+then Python is not added to PATH correctly.
+
+---
+
+### Windows Fix (If Python Not Found)
+
+Reinstall Python and ensure this is checked during installation:
+
+✅ `Add Python to PATH`
+
+OR manually add Python to PATH through:
+
+- System Environment Variables
+- Edit PATH
+- Add your Python installation folder
+
+---
+
+## 3. Install Node.js & npm
+
+Download Node.js (LTS version recommended):
+
+- https://nodejs.org/
+
+Installing Node.js will also install `npm`.
+
+---
+
+## 4. Verify npm Installation
+
+Run:
 
 ```bash
 npm --version
@@ -62,7 +97,7 @@ Expected output example:
 
 ---
 
-### 4. Install Git
+## 5. Install Git
 
 Download Git:
 
@@ -81,7 +116,18 @@ git config --global user.email "your-email@example.com"
 
 First, let's run the game on your own computer to see how it works locally.
 
-## 1. Create and Activate a Virtual Environment
+---
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/damjali/Vibe-To-Live-Session2.git
+cd Vibe-To-Live-Session2
+```
+
+---
+
+## 2. Create and Activate a Virtual Environment
 
 Navigate to the `backend` folder and set up a Python virtual environment:
 
@@ -105,7 +151,7 @@ pip install -r requirements.txt
 
 ---
 
-## 2. Start the Backend Server
+## 3. Start the Backend Server
 
 Once dependencies are installed, start the FastAPI server:
 
@@ -115,7 +161,7 @@ uvicorn main:app --reload
 
 ---
 
-## 3. Open in Browser
+## 4. Open in Browser
 
 Go to the following URL in your web browser:
 
@@ -132,14 +178,33 @@ Now let's make your game **public and multiplayer** so others can join!
 
 ---
 
-## Step 1: Claim GCP Credits and Enable Services
+# ☁️ Step 1: Open Google Cloud Shell Properly
 
-1. Claim your free $5 GCP credit (if applicable).
-2. Open the **Google Cloud Console**.
-3. Go to the **Billing** section and open **Linked Accounts**.
-4. Set the billing account for your current project to the **Google Cloud Platform Trial Billing Account**.
+1. Open the **Google Cloud Console**
+2. Make sure you are currently inside the correct project
+3. Ensure this project has the **billing account linked**
+4. Click the **Terminal / Cloud Shell icon** on the top-right corner of the console
 
-Open **Google Cloud Shell** from the console, and enable the required services:
+⚠️ IMPORTANT:  
+Before continuing, double check that your Cloud Shell terminal is using the project with billing enabled.
+
+You can verify using:
+
+```bash
+gcloud config get-value project
+```
+
+---
+
+# 💳 Step 2: Claim GCP Credits and Enable Services
+
+1. Claim your free $5 GCP credit (if applicable)
+2. Open the **Billing** section
+3. Open **Linked Accounts**
+4. Ensure your current project is linked to:
+   - ✅ Google Cloud Platform Trial Billing Account
+
+Enable the required services:
 
 ```bash
 gcloud services enable \
@@ -151,9 +216,9 @@ gcloud services enable \
 
 ---
 
-## Step 2: Clone the Project in Cloud Shell
+# 📥 Step 3: Clone the Project in Cloud Shell
 
-In your Cloud Shell, run the following commands:
+In your Cloud Shell terminal:
 
 ```bash
 git clone https://github.com/damjali/Vibe-To-Live-Session2.git
@@ -162,9 +227,9 @@ cd Vibe-To-Live-Session2
 
 ---
 
-# ⚠️ Step 3: Set Project Info & Permissions (IMPORTANT)
+# ⚠️ Step 4: Set Project Info & Permissions (IMPORTANT)
 
-Before building, you must configure your **Project ID, Project Number, and permissions**.
+Before building, configure your Project ID, Project Number, and permissions.
 
 ---
 
@@ -179,7 +244,7 @@ export PROJECT_NUM=$(gcloud projects describe $PROJECT_ID --format="value(projec
 
 ## 2. Grant Required Permissions
 
-Grant the default compute service account the necessary permissions to build and deploy to Cloud Run:
+Grant the default compute service account the necessary permissions:
 
 ```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -199,7 +264,7 @@ Replace `"your email"` with your Google Cloud account email:
 
 ```bash
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="your email" \
+    --member="user:your-email@gmail.com" \
     --role="roles/cloudbuild.builds.editor"
 ```
 
@@ -218,7 +283,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 ---
 
-# 📦 Step 4: Create Artifact Registry & Build Docker Image
+# 📦 Step 5: Create Artifact Registry & Build Docker Image
 
 First, create a repository inside Artifact Registry:
 
@@ -240,13 +305,13 @@ gcloud builds submit \
 
 ---
 
-# ☁️ Step 5: Deploy to Cloud Run
+### Step 6: Deploy to Cloud Run
 
 Once the image is built, deploy it via the Google Cloud Console:
 
-1. Go to **Cloud Run** in the Google Cloud Console.
-2. Click on **Services** → **Deploy Container**.
-3. Under **Container Image URL**, select the `sumo-wars` image you just built.
+1. Go to **Cloud Run**
+2. Click **Services** → **Deploy Container**
+3. Under **Container Image URL**, select the `sumo-wars` image
 4. Configure the following settings:
 
 | Setting | Value |
@@ -255,19 +320,27 @@ Once the image is built, deploy it via the Google Cloud Console:
 | Region | `asia-southeast1 (Singapore)` |
 | Minimum Instances | `0` |
 | Maximum Instances | `1` *(Optional: Keeps everyone in the same server instance)* |
-| Authentication | ✅ Allow unauthenticated invocations |
+| Authentication | ✅ **Allow unauthenticated invocations (Public Access)** |
 
-5. Click **Create**.
+⚠️ IMPORTANT:  
+Make sure you enable:
+
+✅ **Allow unauthenticated invocations**  
+✅ **Public Access**
+
+Otherwise, other players will not be able to access your game URL.
+
+5. Click **Create**
 
 ---
 
-# 🎮 Step 6: Play Multiplayer
+# 🎮 Step 7: Play Multiplayer
 
 After deployment is complete:
 
-- You’ll get a **public URL** for your Cloud Run service.
-- Open it in your browser.
-- Share the link with your friends!
+- You’ll get a public URL for your Cloud Run service
+- Open it in your browser
+- Share the link with your friends
 
 🔥 Now multiple players can join your game at the same time!
 
@@ -278,6 +351,7 @@ After deployment is complete:
 You’ve successfully:
 
 ✔️ Installed Python, npm, and Git  
+✔️ Verified Python PATH configuration  
 ✔️ Run a backend server locally  
 ✔️ Set up Google Cloud Platform with necessary permissions  
 ✔️ Built a Docker image and stored it in Artifact Registry  
